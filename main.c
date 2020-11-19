@@ -28,10 +28,11 @@ char *str[] = {
 char *p_str[] = {"  O  ",
                  "--|--",
                  " / \\ "};
-int p_num[MAXN]; //每层的人数
-int e_num;       //电梯里的人数
-int f_num;       //总楼层数
-int e_floor = 1; //当前电梯所在层
+int p_num[MAXN];   //每层的人数
+int p_f_num[MAXN]; //每层楼道里的人
+int e_num;         //电梯里的人数
+int f_num;         //总楼层数
+int e_floor = 1;   //当前电梯所在层
 stack S[10];
 LinkQueue Q[10][2]; //上升是1，下降是0
 int e_status;
@@ -74,7 +75,7 @@ void prstr(char *ch)
 {
     gotoxy(0, E_H * f_num + 3);
 
-    printf("%-20s\n", ch);
+    printf("%-20s", ch);
 }
 void prlight(int n, int flag, int status)
 {
@@ -309,7 +310,24 @@ void udp(int n)
         x += 6;
     }
 }
-
+//楼道增加一个人
+void adpf(int n, passenger p)
+{
+    int x = E_W * 3 - 1 - (++p_f_num[n]) * 6;
+    int y = 1 + (f_num - n) * E_H;
+    prap(x, y, p);
+}
+void clpf(int n)
+{
+    int x = E_W * 2 + 2;
+    int y = 1 + (f_num - n) * E_H;
+    for (int i = 0; i < 5; i++)
+    {
+        gotoxy(x, y++);
+        puts("                                               ");
+    }
+    p_f_num[n] = 0;
+}
 //移除第n层一个人
 void rmp(int n)
 {
@@ -369,24 +387,6 @@ int mpe(int n)
 }
 
 //第n层一人离开电梯
-int rmpe(int n)
-{
-    if (StackEmpty(&S[n]))
-        return FALSE;
-    pop(&S[n]);
-
-    int x = 2 + (--e_num) * 6;
-    int y = 1 + (f_num - n) * 6;
-
-    for (int i = 0; i < 5; i++)
-    {
-        gotoxy(x, y + i);
-        puts("     ");
-    }
-    prstr("一个人离开了电梯");
-    Wait(1000);
-    return TRUE;
-}
 void pre(int n, int k)
 {
     int x = 2;
@@ -395,7 +395,6 @@ void pre(int n, int k)
     gotoxy(x, y++);
     if (y > 1)
         puts("                                                ");
-
     gotoxy(x, y++);
     for (int i = 1; i <= e_num; i++)
         printf(" %2dF  ", Stackindex(i).n_f);
@@ -421,13 +420,38 @@ void pre(int n, int k)
     puts("█ ================================================");
     if (y < E_H * f_num)
         puts("█                                                 ");
+}
+
+//一个人离开电梯
+int rmpe(int n)
+{
+    if (StackEmpty(&S[n]))
+        return FALSE;
+    passenger p = *(gettop(&S[n]));
+    pop(&S[n]);
+
+    --e_num;
+
+    prstr("一个人离开了电梯");
+
+    pre(n, 0);
+    adpf(n, p);
 
     Wait(1000);
+
+    return TRUE;
 }
 void updown(int flag)
 {
+    if (flag > 0)
+        prstr("上升中");
+    else
+        prstr("下降中");
     for (int i = 1; i <= E_H; i++)
+    {
         pre(e_floor, flag * i);
+        Wait(1000);
+    }
 
     e_floor += flag;
 }
@@ -442,6 +466,7 @@ void run()
             prinlight(e_floor, FALSE);
             while (rmpe(e_floor))
                 ;
+            clpf(e_floor);
             while (mpe(e_floor))
                 ;
         }
@@ -488,6 +513,7 @@ void run()
             prinlight(e_floor, FALSE);
             while (rmpe(e_floor))
                 ;
+            clpf(e_floor);
             while (mpe(e_floor))
                 ;
         }
