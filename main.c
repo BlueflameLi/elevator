@@ -10,7 +10,7 @@
 #define CLS system("cls") //清空屏幕
 #define E_W 50            //楼层宽度
 #define E_H 6             //楼层高度
-#define E_W_MAX 600       //最大载重
+#define E_W_MAX 520       //最大载重
 #define E_N_MAX 8         //最大人数
 #define STOP 0
 #define DOWN -1
@@ -36,13 +36,15 @@ int p_f_num[MAXN]; //每层楼道里的人
 int e_num;         //电梯里的人数
 int f_num;         //总楼层数
 int e_floor = 1;   //当前电梯所在层
+int e_p_w;
 stack S[10];
 LinkQueue Q[10][2]; //上升是1，下降是0
 int e_status;       //电梯运行状态
 int T;              //运行时间
 int light[10][2];   //外面楼层离=里的电脑按钮
 int inlight[10];    //电梯里面的按钮
-
+int MaxTime = 200;
+int overload;
 //光标移动
 void gotoxy(unsigned char x, unsigned char y)
 {
@@ -249,7 +251,8 @@ void prap(int x, int y, passenger p)
 //在第n层生成一个小人
 void adp(int n)
 {
-
+    if (p_num[n] == E_N_MAX)
+        return;
     int x = E_W + 1 + (p_num[n]++) * 6;
     int y = 1 + (f_num - n) * E_H;
 
@@ -269,8 +272,9 @@ void adp(int n)
 }
 
 //随机生成k个人
-void rande(int k)
+void rande()
 {
+    int k = rand() % 6;
     while (k--)
     {
         int n = rand() % f_num + 1;
@@ -369,7 +373,17 @@ void rmp(int n)
     prstr("离开了一个人");
     Wait(SLEEPTIME);
 }
-
+int checkoverload(int n, passenger p)
+{
+    if (e_num >= E_N_MAX || e_p_w + p.w > E_W_MAX + 10)
+    {
+        overload = TRUE;
+        prstr("\a超载");
+        Wait(SLEEPTIME);
+        return FALSE;
+    }
+    return TRUE;
+}
 //第n层一个人进电梯
 int mpe(int n)
 {
@@ -379,12 +393,18 @@ int mpe(int n)
     if (!QueueEmpty(&Q[n][1]) && e_status == UP)
     {
         p = getfront(&Q[n][1]);
-        pop_front(&Q[n][1]);
+        if (checkoverload(n, p))
+            pop_front(&Q[n][1]);
+        else
+            return FALSE;
     }
     else if (!QueueEmpty(&Q[n][0]) && e_status == DOWN)
     {
         p = getfront(&Q[n][0]);
-        pop_front(&Q[n][0]);
+        if (checkoverload(n, p))
+            pop_front(&Q[n][0]);
+        else
+            return FALSE;
     }
     else
         return FALSE;
@@ -404,6 +424,8 @@ int mpe(int n)
 
     //按下按钮
     prinlight(p.n_f, TRUE);
+
+    e_p_w += p.w;
 
     x = 2 + (e_num++) * 6;
     prap(x, y, p);
@@ -468,7 +490,7 @@ int rmpe(int n)
     pop(&S[n]);
 
     --e_num;
-
+    e_p_w -= p.w;
     prstr("一个人离开了电梯");
 
     //更新电梯上的人
@@ -501,6 +523,7 @@ void updown(int flag)
 //运行一次电梯，上行一层或下降一层或原地等待
 void run()
 {
+
     if (e_status == UP)
     {
         //判断当前层是否需要停
@@ -546,8 +569,20 @@ void run()
             {
                 prlight(e_floor, 0, FALSE);
                 e_status = DOWN;
+                if (overload)
+                {
+                    prlight(e_floor, 1, TRUE);
+                    overload = FALSE;
+                }
+
                 while (mpe(e_floor))
                     ;
+
+                if (overload)
+                {
+                    prlight(e_floor, 0, TRUE);
+                    overload = FALSE;
+                }
                 updown(DOWN);
             }
             else
@@ -559,7 +594,11 @@ void run()
 
             return;
         }
-
+        if (overload)
+        {
+            prlight(e_floor, 1, TRUE);
+            overload = FALSE;
+        }
         //上行一层
         updown(UP);
     }
@@ -604,8 +643,18 @@ void run()
             {
                 prlight(e_floor, 1, FALSE);
                 e_status = UP;
+                if (overload)
+                {
+                    prlight(e_floor, 0, TRUE);
+                    overload = FALSE;
+                }
                 while (mpe(e_floor))
                     ;
+                if (overload)
+                {
+                    prlight(e_floor, 1, TRUE);
+                    overload = FALSE;
+                }
                 updown(UP);
             }
             else
@@ -615,6 +664,11 @@ void run()
             }
 
             return;
+        }
+        if (overload)
+        {
+            prlight(e_floor, 0, TRUE);
+            overload = FALSE;
         }
         updown(DOWN);
     }
@@ -631,6 +685,7 @@ int main()
 
     //读入电梯层数
     int n;
+    puts("请输入电梯层数");
     scanf("%d", &f_num);
 
     //初始化栈和队列
@@ -646,22 +701,11 @@ int main()
 
     Sleep(SLEEPTIME);
 
-    rande(1);
-    run();
-    run();
-    run();
-    rande(2);
-    run();
-    run();
-    run();
-    rande(5);
-    run();
-    run();
-    run();
-    rande(3);
-    run();
-    run();
-    run();
+    while (T < MaxTime)
+    {
+        rande();
+        run();
+    }
 
     system("pause");
     return 0;
