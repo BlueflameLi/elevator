@@ -15,12 +15,13 @@
 #define STOP 0
 #define DOWN -1
 #define UP 1
-#define OPEN 2
-#define CLOSE 3
+#define OPEN 1
+#define CLOSE 0
 #define TRUE 1
 #define FALSE 0
-#define SLEEPTIME 1000
-
+#define SLEEPTIME 500
+#define WAITTIME 30
+#define RANDPN 5
 //电梯界面
 char *str[] = {
     "█                                                 |                                                                                                  █",
@@ -43,8 +44,10 @@ int e_status;       //电梯运行状态
 int T;              //运行时间
 int light[10][2];   //外面楼层离=里的电脑按钮
 int inlight[10];    //电梯里面的按钮
-int MaxTime = 200;
+int MaxTime = 300;
 int overload;
+int randp_num;
+int waitedtime;
 //光标移动
 void gotoxy(unsigned char x, unsigned char y)
 {
@@ -71,7 +74,7 @@ void Wait(int t)
 {
     gotoxy(0, E_H * f_num + 2);
 
-    printf("%d\n", T++);
+    printf("电梯已运行%d分钟\n", T++);
 
     gotoxy(0, E_H * f_num + 4);
     Sleep(t);
@@ -82,7 +85,7 @@ void prstr(char *ch)
 {
     gotoxy(0, E_H * f_num + 3);
 
-    printf("%-20s", ch);
+    printf("%-30s", ch);
 }
 
 //打印楼层电梯按钮，n为当前层，flag为上行还是下行按钮，status为开关状态
@@ -267,19 +270,23 @@ void adp(int n)
     if (e_status == STOP)
         e_status = n > e_floor ? UP : DOWN;
     prap(x, y, p);
-    prstr("生成了一个人");
-    Wait(SLEEPTIME);
 }
 
 //随机生成k个人
 void rande()
 {
-    int k = rand() % 6;
+    if (T >= 200)
+        return;
+    int k = rand() % (RANDPN - T / 40);
+    if (k < 1)
+        return;
     while (k--)
     {
         int n = rand() % f_num + 1;
         adp(n);
     }
+    prstr("生成乘客");
+    Wait(SLEEPTIME);
 }
 
 //更新第n层等候的人
@@ -359,20 +366,7 @@ void clpf(int n)
     p_f_num[n] = 0;
 }
 
-//移除第n层一个人
-void rmp(int n)
-{
-    int x = E_W + 1 + (--p_num[n]) * 6;
-    int y = 1 + (f_num - n) * E_H;
-
-    for (int i = 0; i < 5; i++)
-    {
-        gotoxy(x, y + i);
-        puts("     ");
-    }
-    prstr("离开了一个人");
-    Wait(SLEEPTIME);
-}
+//检测超重
 int checkoverload(int n, passenger p)
 {
     if (e_num >= E_N_MAX || e_p_w + p.w > E_W_MAX + 10)
@@ -383,6 +377,26 @@ int checkoverload(int n, passenger p)
         return FALSE;
     }
     return TRUE;
+}
+void ocdoor(int n, int status)
+{
+    int x = E_W;
+    int y = 1 + (f_num - n) * E_H;
+    gotoxy(x, y++);
+    if (status == OPEN)
+        for (int i = 0; i < 5; i++)
+        {
+            putchar(' ');
+            gotoxy(x, y++);
+        }
+    else
+        for (int i = 0; i < 5; i++)
+        {
+            putchar('|');
+            gotoxy(x, y++);
+        }
+    prstr(status == OPEN ? "开门" : "关门");
+    Wait(SLEEPTIME);
 }
 //第n层一个人进电梯
 int mpe(int n)
@@ -526,6 +540,11 @@ void run()
 
     if (e_status == UP)
     {
+        if (e_floor == f_num)
+        {
+            e_status = DOWN;
+            return;
+        }
         //判断当前层是否需要停
         if (light[e_floor][1] || inlight[e_floor])
         {
@@ -533,6 +552,7 @@ void run()
             prlight(e_floor, 1, FALSE);
             prinlight(e_floor, FALSE);
 
+            ocdoor(e_floor, OPEN);
             //离开电梯
             while (rmpe(e_floor))
                 ;
@@ -543,6 +563,8 @@ void run()
             //进入电梯
             while (mpe(e_floor))
                 ;
+
+            ocdoor(e_floor, CLOSE);
         }
 
         //判断是否有高层请求
@@ -574,10 +596,10 @@ void run()
                     prlight(e_floor, 1, TRUE);
                     overload = FALSE;
                 }
-
+                ocdoor(e_floor, OPEN);
                 while (mpe(e_floor))
                     ;
-
+                ocdoor(e_floor, CLOSE);
                 if (overload)
                 {
                     prlight(e_floor, 0, TRUE);
@@ -604,12 +626,18 @@ void run()
     }
     else if (e_status == DOWN)
     {
+        if (e_floor == 1)
+        {
+            e_status = UP;
+            return;
+        }
         //判断当层是否停
         if (light[e_floor][0] || inlight[e_floor])
         {
             prlight(e_floor, 0, FALSE);
             prinlight(e_floor, FALSE);
 
+            ocdoor(e_floor, OPEN);
             while (rmpe(e_floor))
                 ;
 
@@ -617,6 +645,7 @@ void run()
 
             while (mpe(e_floor))
                 ;
+            ocdoor(e_floor, CLOSE);
         }
 
         //判断是否有低层请求
@@ -648,8 +677,10 @@ void run()
                     prlight(e_floor, 0, TRUE);
                     overload = FALSE;
                 }
+                ocdoor(e_floor, OPEN);
                 while (mpe(e_floor))
                     ;
+                ocdoor(e_floor, CLOSE);
                 if (overload)
                 {
                     prlight(e_floor, 1, TRUE);
@@ -674,7 +705,13 @@ void run()
     }
     else
     {
-        prstr("等待中");
+        if (++waitedtime >= 10 && e_floor > 1)
+        {
+            updown(DOWN);
+            prstr("长时间无人，回到1层待命");
+        }
+        else
+            prstr("等待中");
         Wait(SLEEPTIME);
     }
 }
@@ -706,7 +743,7 @@ int main()
         rande();
         run();
     }
-
+    prstr("结束");
     system("pause");
     return 0;
 }
