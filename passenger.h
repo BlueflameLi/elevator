@@ -8,6 +8,7 @@ typedef struct
     int n_f;   //乘客想去的楼层
     int intime;//乘客生成的时间
     int entime;//乘客进入电梯的时间
+    int waittime;
 } passenger;
 
 #endif
