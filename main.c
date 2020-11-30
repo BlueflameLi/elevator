@@ -19,8 +19,7 @@
 #define CLOSE 0
 #define TRUE 1
 #define FALSE 0
-#define SLEEPTIME 500
-#define WAITTIME 30
+#define SLEEPTIME 1000
 #define RANDPN 5
 //电梯界面
 char *str[] = {
@@ -232,7 +231,7 @@ passenger randp()
     p.w = rand() % 51 + 50;
     p.n_f = rand() % f_num + 1;
     p.intime = T;
-
+    p.waittime = rand() % 21 + 30;
     return p;
 }
 
@@ -365,7 +364,45 @@ void clpf(int n)
     }
     p_f_num[n] = 0;
 }
-
+void checkwait()
+{
+    for (int i = 1; i <= f_num; i++)
+        for (int j = 0; j < 2; j++)
+        {
+            if (!QueueEmpty(&Q[i][j]))
+            {
+                QNode *p = Q[i][j].front;
+                while (p->next != Q[i][j].rear)
+                {
+                    if (T >= p->next->data.intime + p->next->data.waittime)
+                    {
+                        p_num[i]--;
+                        adpf(i, p->next->data);
+                        QNode *q = p->next;
+                        p->next = p->next->next;
+                        free(q);
+                        udp(i);
+                        prstr("一个人因等待时间过长而离开");
+                    }
+                    else
+                        p = p->next;
+                }
+                if (T >= Q[i][j].rear->data.intime + Q[i][j].rear->data.waittime)
+                {
+                    p_num[i]--;
+                    adpf(i, Q[i][j].rear->data);
+                    free(Q[i][j].rear);
+                    Q[i][j].rear = p;
+                    p->next = NULL;
+                    udp(i);
+                    prstr("一个人因等待时间过长而离开");
+                }
+            }
+        }
+    Wait(SLEEPTIME);
+    for (int i = 1; i <= f_num; i++)
+        clpf(i);
+}
 //检测超重
 int checkoverload(int n, passenger p)
 {
@@ -742,6 +779,7 @@ int main()
     {
         rande();
         run();
+        checkwait();
     }
     prstr("结束");
     system("pause");
