@@ -1,7 +1,6 @@
 //the coding is UTF-8
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "passenger.h"
