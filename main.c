@@ -1,231 +1,27 @@
 //the coding is GB2312
 #include <string.h>
 #include <time.h>
-#include "stack.h"
-#include "queue.h"
-#include "elevator.h"
-#include <Windows.h>
+#include "interface.h"
 
-#define CLS system("cls") //清空屏幕
-#define E_W 50            //楼层宽度
-#define E_H 6             //楼层高度
-#define E_W_MAX 520       //最大载重
-#define E_N_MAX 8         //最大人数
-#define STOP 0
-#define DOWN -1
-#define UP 1
-#define OPEN 1
-#define CLOSE 0
 #define TRUE 1
 #define FALSE 0
 #define SLEEPTIME 1000
 #define RANDPN 5
 #define MAXTIME 300
-//电梯界面
-char *str[] = {
-    "█                                                 |                                                                                                  █",
-    "█                                                 ██████████████████████████████████████████████████",
-    "█=================================================██████████████████████████████████████████████████",
-    "█████████████████████████████████████████████████████████████████"};
 
-int f_num;          //总楼层数
-LinkQueue Q[10][2]; //上升是1，下降是0
-
-int T;            //运行时间
-int light[10][2]; //外面楼层离=里的电脑按钮
-int inlight[10];  //电梯里面的按钮
-int overload;
+int T; //运行时间
 int randp_num;
 int waitedtime;
 
-//乘客栈索引，按进入电梯的顺序排序，n为第n个进入电梯的
-passenger Stackindex(int n)
-{
-    int p[10] = {0};
-    int cnt = 0;
-    int k;
-
-    while (cnt < n)
-    {
-        int mi = 0x3f3f3f3f;
-        for (int i = 1; i <= f_num; i++)
-            if (p[i] < StackLength(&E.S[i]) && E.S[i].base[p[i]].entime < mi)
-            {
-                mi = E.S[i].base[p[i]].entime;
-                k = i;
-            }
-        p[k]++;
-        cnt++;
-    }
-
-    if (cnt == n)
-        return E.S[k].base[p[k] - 1];
-}
-
-//光标移动
-void gotoxy(unsigned char x, unsigned char y)
-{
-    //COORD是Windows API中定义的一种结构，表示一个字符在控制台屏幕上的坐标
-    COORD cor;
-
-    //句柄
-    HANDLE hout;
-
-    //设定我们要定位到的坐标
-    cor.X = x;
-    cor.Y = y;
-
-    //GetStdHandle函数获取一个指向特定标准设备的句柄，包括标准输入，标准输出和标准错误。
-    //STD_OUTPUT_HANDLE正是代表标准输出（也就是显示屏）的宏
-    hout = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    //SetConsoleCursorPosition函数用于设置控制台光标的位置
-    SetConsoleCursorPosition(hout, cor);
-}
-
-//打印一个人，x、y为小人的位置（左上角那点），p为小人信息
-void prap(int x, int y, passenger p)
-{
-    gotoxy(x, y++);
-    printf(" %2dF  ", p.n_f);
-    gotoxy(x, y++);
-    printf("%3dkg ", p.w);
-    gotoxy(x, y++);
-    puts(p_str[0]);
-    gotoxy(x, y++);
-    puts(p_str[1]);
-    gotoxy(x, y++);
-    puts(p_str[2]);
-}
 //延时
 void Wait(int t)
 {
-    gotoxy(0, E_H * f_num + 2);
+    gotoxy(0, F_H * F.num + 2);
 
     printf("电梯已运行%d分钟\n", T++);
 
-    gotoxy(0, E_H * f_num + 4);
+    gotoxy(0, F_H * F.num + 4);
     Sleep(t);
-}
-
-//打印提示信息
-void prstr(char *ch)
-{
-    gotoxy(0, E_H * f_num + 3);
-
-    printf("%-30s", ch);
-}
-
-//打印楼层电梯按钮，n为当前层，flag为上行还是下行按钮，status为开关状态
-void prlight(int n, int flag, int status)
-{
-    //更改状态
-    light[n][flag] = status;
-
-    int x = E_W * 2 + 1;
-    int y = 1 + (f_num - n) * E_H + 1;
-    if (flag == 1)
-    {
-        if (status)
-        {
-            gotoxy(x, y);
-            printf("▲");
-        }
-        else
-        {
-            gotoxy(x, y);
-            printf("  ");
-        }
-    }
-    else
-    {
-        if (status)
-        {
-            gotoxy(x, y + 2);
-            printf("▼");
-        }
-        else
-        {
-            gotoxy(x, y + 2);
-            printf("  ");
-        }
-    }
-}
-
-//打印电梯内的按钮，n为按钮对应的层，status为开关状态
-void prinlight(int n, int status)
-{
-    //切换状态
-    inlight[n] = status;
-
-    int x = E_W * 3 + 5;
-    int y = 1 + (n - 1) * 4;
-
-    if (status)
-    {
-        gotoxy(x, y++);
-        printf("║ █████ ║");
-        gotoxy(x, y++);
-        printf("║ █ %d █ ║", n);
-        gotoxy(x, y);
-        printf("║ █████ ║");
-    }
-    else
-    {
-        gotoxy(x, y++);
-        printf("║       ║");
-        gotoxy(x, y++);
-        printf("║   %d   ║", n);
-        gotoxy(x, y);
-        printf("║       ║");
-    }
-}
-
-//打印初始界面
-void printerface()
-{
-    //清空屏幕
-    CLS;
-
-    //打印天花板
-    puts(str[3]);
-
-    //打印中间层
-    for (int i = 0; i < f_num; i++)
-    {
-        for (int j = 1; j < E_H; j++)
-            puts(str[0]);
-        if (i < f_num - 1)
-            puts(str[1]);
-    }
-
-    //打印地板
-    puts(str[2]);
-    puts(str[3]);
-
-    //绘制电梯内按钮
-    int x = E_W * 3 + 5;
-    int y = 0;
-    gotoxy(x, y++);
-    printf("╔═══════╗");
-    for (int i = 1; i <= f_num; i++)
-    {
-
-        gotoxy(x, y++);
-        printf("║       ║");
-        gotoxy(x, y++);
-        printf("║   %d   ║", i);
-        gotoxy(x, y++);
-        printf("║       ║");
-        if (i < f_num)
-        {
-            gotoxy(x, y++);
-            printf("╠═══════╣");
-        }
-    }
-    gotoxy(x, y++);
-    printf("╚═══════╝");
-    gotoxy(0, E_H * f_num + 5);
 }
 
 //随机生成小人
@@ -234,7 +30,7 @@ passenger randp()
     passenger p;
 
     p.w = rand() % 51 + 50;
-    p.n_f = rand() % f_num + 1;
+    p.n_f = rand() % F.num + 1;
     p.intime = T;
     p.waittime = rand() % 21 + 30;
     return p;
@@ -245,14 +41,14 @@ void adp(int n)
 {
     if (p_num[n] == E_N_MAX)
         return;
-    int x = E_W + 1 + (p_num[n]++) * 6;
-    int y = 1 + (f_num - n) * E_H;
+    int x = F_W + 1 + (p_num[n]++) * 6;
+    int y = 1 + (F.num - n) * F_H;
 
     passenger p = randp();
     while (p.n_f == n)
         p = randp();
 
-    push_back(&Q[n][p.n_f > n], p);
+    push_back(&F.Q[n][p.n_f > n], p);
 
     prlight(n, p.n_f > n, TRUE);
 
@@ -271,7 +67,7 @@ void rande()
         return;
     while (k--)
     {
-        int n = rand() % f_num + 1;
+        int n = rand() % F.num + 1;
         adp(n);
     }
     prstr("生成乘客");
@@ -282,11 +78,11 @@ void rande()
 void udp(int n)
 {
     passenger p;
-    QNode *uq = Q[n][1].front->next;
-    QNode *dq = Q[n][0].front->next;
+    QNode *uq = F.Q[n][1].front->next;
+    QNode *dq = F.Q[n][0].front->next;
 
     int x = 50 + 1;
-    int y = 1 + (f_num - n) * E_H;
+    int y = 1 + (F.num - n) * F_H;
 
     //清空该层
     for (int i = 0; i < 5; i++)
@@ -337,16 +133,16 @@ void udp(int n)
 //楼道增加一个人
 void adpf(int n, passenger p)
 {
-    int x = E_W * 3 - 1 - (++p_f_num[n]) * 6;
-    int y = 1 + (f_num - n) * E_H;
+    int x = F_W * 3 - 1 - (++p_f_num[n]) * 6;
+    int y = 1 + (F.num - n) * F_H;
     prap(x, y, p);
 }
 
 //清空楼道里的人
 void clpf(int n)
 {
-    int x = E_W * 2 + 2;
-    int y = 1 + (f_num - n) * E_H;
+    int x = F_W * 2 + 2;
+    int y = 1 + (F.num - n) * F_H;
     for (int i = 0; i < 5; i++)
     {
         gotoxy(x, y++);
@@ -356,13 +152,13 @@ void clpf(int n)
 }
 void checkwait()
 {
-    for (int i = 1; i <= f_num; i++)
+    for (int i = 1; i <= F.num; i++)
         for (int j = 0; j < 2; j++)
         {
-            if (!QueueEmpty(&Q[i][j]))
+            if (!QueueEmpty(&F.Q[i][j]))
             {
-                QNode *p = Q[i][j].front;
-                while (p->next != Q[i][j].rear)
+                QNode *p = F.Q[i][j].front;
+                while (p->next != F.Q[i][j].rear)
                 {
                     if (T >= p->next->data.intime + p->next->data.waittime)
                     {
@@ -377,12 +173,12 @@ void checkwait()
                     else
                         p = p->next;
                 }
-                if (T >= Q[i][j].rear->data.intime + Q[i][j].rear->data.waittime)
+                if (T >= F.Q[i][j].rear->data.intime + F.Q[i][j].rear->data.waittime)
                 {
                     p_num[i]--;
-                    adpf(i, Q[i][j].rear->data);
-                    free(Q[i][j].rear);
-                    Q[i][j].rear = p;
+                    adpf(i, F.Q[i][j].rear->data);
+                    free(F.Q[i][j].rear);
+                    F.Q[i][j].rear = p;
                     p->next = NULL;
                     udp(i);
                     prstr("一个人因等待时间过长而离开");
@@ -390,7 +186,7 @@ void checkwait()
             }
         }
     Wait(SLEEPTIME);
-    for (int i = 1; i <= f_num; i++)
+    for (int i = 1; i <= F.num; i++)
         clpf(i);
 }
 //检测超重
@@ -398,7 +194,7 @@ int checkoverload(int n, passenger p)
 {
     if (E.num >= E_N_MAX || E.p_w + p.w > E_W_MAX + 10)
     {
-        overload = TRUE;
+        E.overload = TRUE;
         prstr("\a超载");
         Wait(SLEEPTIME);
         return FALSE;
@@ -407,8 +203,8 @@ int checkoverload(int n, passenger p)
 }
 void ocdoor(int n, int status)
 {
-    int x = E_W;
-    int y = 1 + (f_num - n) * E_H;
+    int x = F_W;
+    int y = 1 + (F.num - n) * F_H;
     gotoxy(x, y++);
     if (status == OPEN)
         for (int i = 0; i < 5; i++)
@@ -431,27 +227,27 @@ int mpe(int n)
 
     passenger p;
 
-    if (!QueueEmpty(&Q[n][1]) && E.status == UP)
+    if (!QueueEmpty(&F.Q[n][1]) && E.status == UP)
     {
-        p = getfront(&Q[n][1]);
+        p = getfront(&F.Q[n][1]);
         if (checkoverload(n, p))
-            pop_front(&Q[n][1]);
+            pop_front(&F.Q[n][1]);
         else
             return FALSE;
     }
-    else if (!QueueEmpty(&Q[n][0]) && E.status == DOWN)
+    else if (!QueueEmpty(&F.Q[n][0]) && E.status == DOWN)
     {
-        p = getfront(&Q[n][0]);
+        p = getfront(&F.Q[n][0]);
         if (checkoverload(n, p))
-            pop_front(&Q[n][0]);
+            pop_front(&F.Q[n][0]);
         else
             return FALSE;
     }
     else
         return FALSE;
 
-    int x = E_W + 1;
-    int y = 1 + (f_num - n) * E_H;
+    int x = F_W + 1;
+    int y = 1 + (F.num - n) * F_H;
 
     for (int i = 0; i < 5; i++)
     {
@@ -479,46 +275,6 @@ int mpe(int n)
     prstr("一个人进入了电梯");
     Wait(SLEEPTIME);
     return TRUE;
-}
-
-//绘制电梯及上面的人，n为层数，k表示上移或下移k格
-void pre(int n, int k)
-{
-    int x = 2;
-    int y = (f_num - n) * 6 - k;
-
-    //覆盖上面的字符
-    gotoxy(x, y++);
-    if (y > 1)
-        puts("                                                ");
-
-    //画人
-    gotoxy(x, y++);
-    for (int i = 1; i <= E.num; i++)
-        printf(" %2dF  ", Stackindex(i).n_f);
-    for (int j = x + E.num * 6; j < E_W - 1; j++)
-        putchar(' ');
-    gotoxy(x, y++);
-    for (int i = 1; i <= E.num; i++)
-        printf("%3dkg ", Stackindex(i).w);
-    for (int j = x + E.num * 6; j < E_W - 1; j++)
-        putchar(' ');
-    for (int i = 0; i < 3; i++)
-    {
-        gotoxy(x, y++);
-        for (int j = 0; j < E.num; j++)
-            printf("%s ", p_str[i]);
-        for (int j = x + E.num * 6; j < E_W; j++)
-            putchar(' ');
-    }
-    putchar('\n');
-
-    //画电梯
-    puts("█ ================================================");
-
-    //覆盖下面的字符
-    if (y < E_H * f_num)
-        puts("█                                                 ");
 }
 
 //一个人离开电梯
@@ -552,7 +308,7 @@ void updown(int flag)
         prstr("上升中");
     else
         prstr("下降中");
-    for (int i = 1; i <= E_H; i++)
+    for (int i = 1; i <= F_H; i++)
     {
         pre(E.floor, flag * i);
         Wait(SLEEPTIME);
@@ -567,13 +323,13 @@ void run()
 
     if (E.status == UP)
     {
-        if (E.floor == f_num)
+        if (E.floor == F.num)
         {
             E.status = DOWN;
             return;
         }
         //判断当前层是否需要停
-        if (light[E.floor][1] || inlight[E.floor])
+        if (F.light[E.floor][1] || E.light[E.floor])
         {
             //到达层按钮灭掉
             prlight(E.floor, 1, FALSE);
@@ -596,8 +352,8 @@ void run()
 
         //判断是否有高层请求
         int flag = FALSE;
-        for (int i = E.floor + 1; i <= f_num; i++)
-            if (light[i][1] || light[i][0] || inlight[i])
+        for (int i = E.floor + 1; i <= F.num; i++)
+            if (F.light[i][1] || F.light[i][0] || E.light[i])
             {
                 flag = TRUE;
                 break;
@@ -607,7 +363,7 @@ void run()
         if (!flag)
         {
             for (int i = E.floor; i > 0; i--)
-                if (light[i][1] || light[i][0] || inlight[i])
+                if (F.light[i][1] || F.light[i][0] || E.light[i])
                 {
                     flag = TRUE;
                     break;
@@ -618,19 +374,19 @@ void run()
             {
                 prlight(E.floor, 0, FALSE);
                 E.status = DOWN;
-                if (overload)
+                if (E.overload)
                 {
                     prlight(E.floor, 1, TRUE);
-                    overload = FALSE;
+                    E.overload = FALSE;
                 }
                 ocdoor(E.floor, OPEN);
                 while (mpe(E.floor))
                     ;
                 ocdoor(E.floor, CLOSE);
-                if (overload)
+                if (E.overload)
                 {
                     prlight(E.floor, 0, TRUE);
-                    overload = FALSE;
+                    E.overload = FALSE;
                 }
                 updown(DOWN);
             }
@@ -643,10 +399,10 @@ void run()
 
             return;
         }
-        if (overload)
+        if (E.overload)
         {
             prlight(E.floor, 1, TRUE);
-            overload = FALSE;
+            E.overload = FALSE;
         }
         //上行一层
         updown(UP);
@@ -659,7 +415,7 @@ void run()
             return;
         }
         //判断当层是否停
-        if (light[E.floor][0] || inlight[E.floor])
+        if (F.light[E.floor][0] || E.light[E.floor])
         {
             prlight(E.floor, 0, FALSE);
             prinlight(E.floor, FALSE);
@@ -678,7 +434,7 @@ void run()
         //判断是否有低层请求
         int flag = FALSE;
         for (int i = E.floor - 1; i > 0; i--)
-            if (light[i][0] || light[i][1] || inlight[i])
+            if (F.light[i][0] || F.light[i][1] || E.light[i])
             {
                 flag = TRUE;
                 break;
@@ -687,8 +443,8 @@ void run()
         //若无，则判断是否有高层请求
         if (!flag)
         {
-            for (int i = E.floor; i <= f_num; i++)
-                if (light[i][1] || light[i][0] || inlight[i])
+            for (int i = E.floor; i <= F.num; i++)
+                if (F.light[i][1] || F.light[i][0] || E.light[i])
                 {
                     flag = TRUE;
                     break;
@@ -699,19 +455,19 @@ void run()
             {
                 prlight(E.floor, 1, FALSE);
                 E.status = UP;
-                if (overload)
+                if (E.overload)
                 {
                     prlight(E.floor, 0, TRUE);
-                    overload = FALSE;
+                    E.overload = FALSE;
                 }
                 ocdoor(E.floor, OPEN);
                 while (mpe(E.floor))
                     ;
                 ocdoor(E.floor, CLOSE);
-                if (overload)
+                if (E.overload)
                 {
                     prlight(E.floor, 1, TRUE);
-                    overload = FALSE;
+                    E.overload = FALSE;
                 }
                 updown(UP);
             }
@@ -723,10 +479,10 @@ void run()
 
             return;
         }
-        if (overload)
+        if (E.overload)
         {
             prlight(E.floor, 0, TRUE);
-            overload = FALSE;
+            E.overload = FALSE;
         }
         updown(DOWN);
     }
@@ -750,14 +506,14 @@ int main()
     //读入电梯层数
     int n;
     puts("请输入电梯层数");
-    scanf("%d", &f_num);
+    scanf("%d", &F.num);
 
     //初始化栈和队列
-    for (int i = 1; i <= f_num; i++)
+    for (int i = 1; i <= F.num; i++)
     {
         InitStack(&E.S[i]);
-        InitQueue(&Q[i][0]);
-        InitQueue(&Q[i][1]);
+        InitQueue(&F.Q[i][0]);
+        InitQueue(&F.Q[i][1]);
     }
 
     //打印初始界面
