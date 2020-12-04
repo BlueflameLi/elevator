@@ -21,44 +21,57 @@ passenger randp()
     p.n_f = rand() % F.num + 1;
     p.intime = T;
     p.waittime = rand() % 21 + 30;
+
     return p;
 }
 
 //在第n层生成一个小人
 void adp(int n)
 {
+    //该层人站满了就不生成
     if (p_num[n] == E_N_MAX)
         return;
+
     int x = F_W + 1 + (p_num[n]++) * 6;
     int y = 1 + (F.num - n) * F_H;
 
+    //随机人
     passenger p = randp();
     while (p.n_f == n)
         p = randp();
 
+    //入队
     push_back(&F.Q[n][p.n_f > n], p);
 
+    //按下电梯外的按钮
     prlight(n, p.n_f > n, TRUE);
 
+    //如果电梯处于等待状态，第一个请求会更改电梯的状态
     if (E.status == STOP)
         E.status = n > E.floor ? UP : DOWN;
+
+    //绘制小人
     prap(x, y, p);
 }
 
 //随机生成k个人
 void rande()
 {
+    //让人随机生成的人数越来越少，200分钟后不再生成人
     if (T >= 200)
         return;
     int k = rand() % (RANDPN - T / 40);
     if (k < 1)
         return;
+
     while (k--)
     {
         int n = rand() % F.num + 1;
         adp(n);
     }
+
     prstr("生成乘客");
+
     Wait(SLEEPTIME);
 }
 
@@ -66,9 +79,8 @@ void rande()
 void udp(int n)
 {
     passenger p;
-    QNode *uq = F.Q[n][1].front->next;
-    QNode *dq = F.Q[n][0].front->next;
-
+    QNode *q[2] = {F.Q[n][0].front->next,
+                   F.Q[n][1].front->next};
     int x = 50 + 1;
     int y = 1 + (F.num - n) * F_H;
 
@@ -79,42 +91,29 @@ void udp(int n)
         puts("                                                 ");
     }
 
-    while (uq && dq)
+    //交替遍历
+    while (q[1] && q[0])
     {
-        if (uq->data.intime < dq->data.intime)
-        {
-            p = uq->data;
-            uq = uq->next;
-        }
-        else
-        {
-            p = dq->data;
-            dq = dq->next;
-        }
+        int k = q[1]->data.intime < q[0]->data.intime;
+        p = q[k]->data;
+        q[k] = q[k]->next;
 
         prap(x, y, p);
 
         x += 6;
     }
 
-    while (uq)
+    for (int i = 0; i < 2; i++)
     {
-        p = uq->data;
-        uq = uq->next;
+        while (q[i])
+        {
+            p = q[i]->data;
+            q[i] = q[i]->next;
 
-        prap(x, y, p);
+            prap(x, y, p);
 
-        x += 6;
-    }
-
-    while (dq)
-    {
-        p = dq->data;
-        dq = dq->next;
-
-        prap(x, y, p);
-
-        x += 6;
+            x += 6;
+        }
     }
 }
 
@@ -175,6 +174,7 @@ void checkwait()
                 }
             }
         }
+
     Wait(SLEEPTIME);
     for (int i = 1; i <= F.num; i++)
         clpf(i);
@@ -199,18 +199,13 @@ void ocdoor(int n, int status)
     int x = F_W;
     int y = 1 + (F.num - n) * F_H;
     gotoxy(x, y++);
-    if (status == OPEN)
-        for (int i = 0; i < 5; i++)
-        {
-            putchar(' ');
-            gotoxy(x, y++);
-        }
-    else
-        for (int i = 0; i < 5; i++)
-        {
-            putchar('|');
-            gotoxy(x, y++);
-        }
+    
+    for (int i = 0; i < 5; i++)
+    {
+        putchar(status == OPEN ? ' ' : '|');
+        gotoxy(x, y++);
+    }
+
     prstr(status == OPEN ? "开门" : "关门");
     Wait(SLEEPTIME);
 }

@@ -1,13 +1,16 @@
 //the coding is UTF-8
 #ifndef _ELEVATOR_H_
 #define _ELEVATOR_H_
-#define E_W_MAX 520       //最大载重
-#define E_N_MAX 8         //最大人数
+
+#define INF 0x3f3f3f3f
+#define E_W_MAX 520 //最大载重
+#define E_N_MAX 8   //最大人数
 #define STOP 0
 #define DOWN -1
 #define UP 1
 #define OPEN 1
 #define CLOSE 0
+
 #include "stack.h"
 #include "floor.h"
 
@@ -23,6 +26,7 @@ typedef struct
 } elevator;
 
 elevator E;
+
 //乘客栈索引，按进入电梯的顺序排序，n为第n个进入电梯的
 passenger Stackindex(int n);
 #endif

@@ -8,6 +8,16 @@ char *str[4] = {
     "█=================================================██████████████████████████████████████████████████",
     "█████████████████████████████████████████████████████████████████"};
 
+char *lightstr[3][3] = {
+    {"║       ║",
+     "║   %d   ║",
+     "║       ║"},
+    {"║ █████ ║",
+     "║ █ %d █ ║",
+     "║ █████ ║"},
+    {"╔═══════╗",
+     "╠═══════╣",
+     "╚═══════╝"}};
 //光标移动
 void gotoxy(unsigned char x, unsigned char y)
 {
@@ -63,24 +73,23 @@ void printerface()
     int x = F_W * 3 + 5;
     int y = 0;
     gotoxy(x, y++);
-    printf("╔═══════╗");
+    printf(lightstr[2][0]);
     for (int i = 1; i <= F.num; i++)
     {
-
         gotoxy(x, y++);
-        printf("║       ║");
+        printf(lightstr[0][0]);
         gotoxy(x, y++);
-        printf("║   %d   ║", i);
+        printf(lightstr[0][1], i);
         gotoxy(x, y++);
-        printf("║       ║");
+        printf(lightstr[0][2]);
         if (i < F.num)
         {
             gotoxy(x, y++);
-            printf("╠═══════╣");
+            printf(lightstr[2][1]);
         }
     }
     gotoxy(x, y++);
-    printf("╚═══════╝");
+    printf(lightstr[2][2]);
     gotoxy(0, F_H * F.num + 5);
 }
 
@@ -91,12 +100,11 @@ void prap(int x, int y, passenger p)
     printf(" %2dF  ", p.n_f);
     gotoxy(x, y++);
     printf("%3dkg ", p.w);
-    gotoxy(x, y++);
-    puts(p_str[0]);
-    gotoxy(x, y++);
-    puts(p_str[1]);
-    gotoxy(x, y++);
-    puts(p_str[2]);
+    for (int i = 0; i < 3; i++)
+    {
+        gotoxy(x, y++);
+        puts(p_str[i]);
+    }
 }
 
 //打印楼层电梯按钮，n为当前层，flag为上行还是下行按钮，status为开关状态
@@ -107,32 +115,9 @@ void prlight(int n, int flag, int status)
 
     int x = F_W * 2 + 1;
     int y = 1 + (F.num - n) * F_H + 1;
-    if (flag == 1)
-    {
-        if (status)
-        {
-            gotoxy(x, y);
-            printf("▲");
-        }
-        else
-        {
-            gotoxy(x, y);
-            printf("  ");
-        }
-    }
-    else
-    {
-        if (status)
-        {
-            gotoxy(x, y + 2);
-            printf("▼");
-        }
-        else
-        {
-            gotoxy(x, y + 2);
-            printf("  ");
-        }
-    }
+
+    gotoxy(x, flag == 1 ? y : y + 2);
+    printf(status ? (flag == 1 ? "▲" : "▼") : "  ");
 }
 
 //打印电梯内的按钮，n为按钮对应的层，status为开关状态
@@ -144,24 +129,12 @@ void prinlight(int n, int status)
     int x = F_W * 3 + 5;
     int y = 1 + (n - 1) * 4;
 
-    if (status)
-    {
-        gotoxy(x, y++);
-        printf("║ █████ ║");
-        gotoxy(x, y++);
-        printf("║ █ %d █ ║", n);
-        gotoxy(x, y);
-        printf("║ █████ ║");
-    }
-    else
-    {
-        gotoxy(x, y++);
-        printf("║       ║");
-        gotoxy(x, y++);
-        printf("║   %d   ║", n);
-        gotoxy(x, y);
-        printf("║       ║");
-    }
+    gotoxy(x, y++);
+    printf(lightstr[status][0]);
+    gotoxy(x, y++);
+    printf(lightstr[status][1], n);
+    gotoxy(x, y);
+    printf(lightstr[status][2]);
 }
 
 //绘制电梯及上面的人，n为层数，k表示上移或下移k格
@@ -176,16 +149,15 @@ void pre(int n, int k)
         puts("                                                ");
 
     //画人
-    gotoxy(x, y++);
-    for (int i = 1; i <= E.num; i++)
-        printf(" %2dF  ", Stackindex(i).n_f);
-    for (int j = x + E.num * 6; j < F_W - 1; j++)
-        putchar(' ');
-    gotoxy(x, y++);
-    for (int i = 1; i <= E.num; i++)
-        printf("%3dkg ", Stackindex(i).w);
-    for (int j = x + E.num * 6; j < F_W - 1; j++)
-        putchar(' ');
+    for (int k = 0; k < 2; k++)
+    {
+        gotoxy(x, y++);
+        for (int i = 1; i <= E.num; i++)
+            printf(k ? "%3dkg " : " %2dF  ", k ? Stackindex(i).w : Stackindex(i).n_f);
+        for (int i = x + E.num * 6; i < F_W; i++)
+            putchar(' ');
+    }
+
     for (int i = 0; i < 3; i++)
     {
         gotoxy(x, y++);
