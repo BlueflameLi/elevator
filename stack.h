@@ -1,3 +1,4 @@
+//the coding is UTF-8
 #ifndef _STACK_H_
 #define _STACK_H_
 #include <stdio.h>

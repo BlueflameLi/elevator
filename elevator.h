@@ -1,3 +1,4 @@
+//the coding is UTF-8
 #ifndef _ELEVATOR_H_
 #define _ELEVATOR_H_
 #define E_W_MAX 520       //最大载重

@@ -1,3 +1,4 @@
+//the coding is GB2312
 #include "interface.h"
 
 //µçÌİ½çÃæ

@@ -5,11 +5,11 @@
 #define MAXN 100 + 10
 typedef struct
 {
-    int w;     //乘客的体重
-    int n_f;   //乘客想去的楼层
-    int intime;//乘客生成的时间
-    int entime;//乘客进入电梯的时间
-    int waittime;
+    int w;        //乘客的体重
+    int n_f;      //乘客想去的楼层
+    int intime;   //乘客生成的时间
+    int entime;   //乘客进入电梯的时间
+    int waittime; //乘客耐心时间
 } passenger;
 
 char *p_str[4];    //绘制小人的字符

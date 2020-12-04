@@ -1,3 +1,4 @@
+//the coding is UTF-8
 #ifndef _FLOOR_H_
 #define _FLOOR_H_
 #define F_W 50 //楼层宽度

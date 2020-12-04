@@ -1,3 +1,4 @@
+//the coding is UTF-8
 #include "elevator.h"
 
 elevator E = {0, 0, 0, 1};
