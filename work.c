@@ -20,7 +20,7 @@ passenger randp()
     p.w = rand() % 51 + 50;
     p.n_f = rand() % F.num + 1;
     p.intime = T;
-    p.waittime = rand() % 21 + 30;
+    p.waittime = rand() % 51 + 30;
 
     return p;
 }
@@ -57,10 +57,10 @@ void adp(int n)
 //随机生成k个人
 void rande()
 {
-    //让人随机生成的人数越来越少，200分钟后不再生成人
-    if (T >= 200)
+    //让人随机生成的人数越来越少
+    if (T >= 250)
         return;
-    int k = rand() % (RANDPN - T / 40);
+    int k = rand() % (RANDPN - T / 50);
     if (k < 1)
         return;
 
@@ -157,7 +157,7 @@ void checkwait()
                         p->next = p->next->next;
                         free(q);
                         udp(i);
-                        prstr("一个人因等待时间过长而离开");
+                        prstr("有人等待时间过长而离开");
                     }
                     else
                         p = p->next;
@@ -170,7 +170,7 @@ void checkwait()
                     F.Q[i][j].rear = p;
                     p->next = NULL;
                     udp(i);
-                    prstr("一个人因等待时间过长而离开");
+                    prstr("有人因等待时间过长而离开");
                 }
             }
         }

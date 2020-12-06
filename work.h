@@ -5,8 +5,8 @@
 #define TRUE 1
 #define FALSE 0
 #define SLEEPTIME 800
-#define RANDPN 5
-#define MAXTIME 250
+#define RANDPN 6
+#define MAXTIME 280
 
 int T;          //运行时间
 int waitedtime; //已等待时间
