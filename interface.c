@@ -8,16 +8,24 @@ char *str[4] = {
     "█=================================================██████████████████████████████████████████████████",
     "█████████████████████████████████████████████████████████████████"};
 
-char *lightstr[3][3] = {
-    {"║       ║",
-     "║   %d   ║",
-     "║       ║"},
-    {"║ █████ ║",
-     "║ █ %d █ ║",
-     "║ █████ ║"},
-    {"╔═══════╗",
-     "╠═══════╣",
-     "╚═══════╝"}};
+//标记已运行的规则
+int r_n[20];
+
+//电梯的运行规则
+char *rule[20] = {
+    "1.电梯处于等待状态时，按请求先后顺序决定电梯上升与下降状态",
+    "2.长时间没人使用电梯自动回到一层",
+    "3.上升状态时，该层有人按下上行按钮或电梯内有人按下该层按钮，停靠该层",
+    "4.下降状态时，该层有人按下下降按钮或电梯内有人按下该层按钮，停靠该层",
+    "5.上升状态时，有高层请求，电梯上升",
+    "6.下降状态时，有低层请求，电梯下降",
+    "7.因人数超过8人或重量超过520kg，电梯超载，人不进入",
+    "8.人等待时间过长会离开",
+    "9.上升状态时，无高层请求，有低层请求，电梯切换下降状态，电梯下降",
+    "10.下降状态时，无低层请求，有高层请求，电梯切换上升状态，电梯上升",
+    "11.无请求，电梯切换等待状态"};
+
+char *lightstr[3][3] = {{"║       ║", "║   %d   ║", "║       ║"}, {"║ █████ ║", "║ █ %d █ ║", "║ █████ ║"}, {"╔═══════╗", "╠═══════╣", "╚═══════╝"}};
 //光标移动
 void gotoxy(unsigned char x, unsigned char y)
 {
@@ -45,6 +53,21 @@ void prstr(char *ch)
     gotoxy(0, F_H * F.num + 3);
 
     printf("%-30s", ch);
+}
+
+//打印当前运行规则
+void prrule(int k)
+{
+    gotoxy(F_W + 15, F_H * F.num + 2);
+
+    printf("%-3d", k + 1);
+    r_n[k] = 1;
+    gotoxy(F_W + 34, F_H * F.num + 2);
+    for (int i = 0; i < R_N; i++)
+    {
+        if (r_n[i])
+            printf("%-3d", i + 1);
+    }
 }
 
 //打印初始界面
@@ -91,6 +114,15 @@ void printerface()
     gotoxy(x, y++);
     printf(lightstr[2][2]);
     gotoxy(0, F_H * F.num + 5);
+
+    //打印规则
+    gotoxy(F_W, F_H * F.num + 2);
+    printf("%-20s %s", "当前运行的规则", "已运行的规则");
+    for (int i = 0; i < R_N; i++)
+    {
+        gotoxy(F_W, F_H * F.num + 3 + i);
+        printf("%-30s", rule[i]);
+    }
 }
 
 //打印一个人，x、y为小人的位置（左上角那点），p为小人信息

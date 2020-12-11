@@ -59,7 +59,7 @@ int main()
         checkwait();
     }
 
-    prstr("½áÊø");
+    prstr("½áÊø\n");
     system("pause");
     return 0;
 }

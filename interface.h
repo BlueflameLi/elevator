@@ -7,9 +7,18 @@
 #include "elevator.h"
 
 #define CLS system("cls") //清空屏幕
-
+#define R_N 11
 //电梯界面
 char *str[4];
+
+//标记已运行的规则
+int r_n[20];
+
+//电梯的运行规则
+char *rule[20];
+
+//打印当前运行规则
+void prrule(int k);
 
 //光标移动
 void gotoxy(unsigned char x, unsigned char y);

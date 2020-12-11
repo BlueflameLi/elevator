@@ -48,7 +48,10 @@ void adp(int n)
 
     //如果电梯处于等待状态，第一个请求会更改电梯的状态
     if (E.status == STOP)
+    {
         E.status = n > E.floor ? UP : DOWN;
+        prrule(0);
+    }
 
     //绘制小人
     prap(x, y, p);
@@ -58,7 +61,7 @@ void adp(int n)
 void rande()
 {
     //让人随机生成的人数越来越少
-    if (T >= 250)
+    if (T >= 200)
         return;
     int k = rand() % (RANDPN - T / 50);
     if (k < 1)
@@ -158,6 +161,7 @@ void checkwait()
                         free(q);
                         udp(i);
                         prstr("有人等待时间过长而离开");
+                        prrule(8);
                     }
                     else
                         p = p->next;
@@ -171,6 +175,7 @@ void checkwait()
                     p->next = NULL;
                     udp(i);
                     prstr("有人因等待时间过长而离开");
+                    prrule(7);
                 }
             }
         }
@@ -187,6 +192,7 @@ int checkoverload(int n, passenger p)
     {
         E.overload = TRUE;
         prstr("\a超载");
+        prrule(6);
         Wait(SLEEPTIME);
         return FALSE;
     }
@@ -199,7 +205,7 @@ void ocdoor(int n, int status)
     int x = F_W;
     int y = 1 + (F.num - n) * F_H;
     gotoxy(x, y++);
-    
+
     for (int i = 0; i < 5; i++)
     {
         putchar(status == OPEN ? ' ' : '|');
@@ -314,6 +320,7 @@ void run()
     {
         if (E.floor == F.num)
         {
+            prrule(8);
             E.status = DOWN;
             return;
         }
@@ -323,6 +330,8 @@ void run()
             //到达层按钮灭掉
             prlight(E.floor, 1, FALSE);
             prinlight(E.floor, FALSE);
+
+            prrule(2);
 
             ocdoor(E.floor, OPEN);
             //离开电梯
@@ -362,6 +371,8 @@ void run()
             if (flag)
             {
                 prlight(E.floor, 0, FALSE);
+
+                prrule(8);
                 E.status = DOWN;
                 if (E.overload)
                 {
@@ -381,6 +392,7 @@ void run()
             }
             else
             {
+                prrule(10);
                 //电梯进入停止状态
                 E.status = STOP;
                 Wait(SLEEPTIME);
@@ -393,6 +405,8 @@ void run()
             prlight(E.floor, 1, TRUE);
             E.overload = FALSE;
         }
+
+        prrule(4);
         //上行一层
         updown(UP);
     }
@@ -400,6 +414,7 @@ void run()
     {
         if (E.floor == 1)
         {
+            prrule(9);
             E.status = UP;
             return;
         }
@@ -408,6 +423,8 @@ void run()
         {
             prlight(E.floor, 0, FALSE);
             prinlight(E.floor, FALSE);
+
+            prrule(3);
 
             ocdoor(E.floor, OPEN);
             while (rmpe(E.floor))
@@ -442,6 +459,8 @@ void run()
             //若有，则进入电梯，电梯上行
             if (flag)
             {
+                prrule(9);
+
                 prlight(E.floor, 1, FALSE);
                 E.status = UP;
                 if (E.overload)
@@ -462,6 +481,8 @@ void run()
             }
             else
             {
+                prrule(10);
+
                 E.status = STOP;
                 Wait(SLEEPTIME);
             }
@@ -473,12 +494,15 @@ void run()
             prlight(E.floor, 0, TRUE);
             E.overload = FALSE;
         }
+
+        prrule(5);
         updown(DOWN);
     }
     else
     {
-        if (++waitedtime >= 10 && E.floor > 1)
+        if (++waitedtime >= 5 && E.floor > 1)
         {
+            prrule(1);
             updown(DOWN);
             prstr("长时间无人，回到1层待命");
         }
